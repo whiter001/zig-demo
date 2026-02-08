@@ -4,38 +4,18 @@
 
 const std = @import("std");
 
-pub fn main() !void {
-    // 初始化通用分配器，用于内存管理
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+fn run_get(client: *std.http.Client, allocator: std.mem.Allocator, url: []const u8) !void {
+    const uri = try std.Uri.parse(url);
 
-    std.debug.print("[debug] allocator initialized\n", .{});
-
-    // 创建 HTTP 客户端
-    var client = std.http.Client{ .allocator = allocator };
-    defer client.deinit();
-
-    std.debug.print("[debug] http client created\n", .{});
-
-    // 解析目标 URL
-    const uri = try std.Uri.parse("https://httpbin.org/get");
-
-    // 定义请求头，设置 Accept 为 application/json
     const headers = [_]std.http.Header{
         .{ .name = "accept", .value = "application/json" },
     };
 
-    // 初始化 ArrayList 用于存储响应体
     var body = try std.ArrayList(u8).initCapacity(allocator, 1024);
     defer body.deinit(allocator);
 
-    std.debug.print("[debug] about to call client.fetch\n", .{});
-
-    // 使用 Allocating writer 将响应写入 ArrayList（匹配 API 要求的 Writer 类型）
     var aw: std.io.Writer.Allocating = .fromArrayList(allocator, &body);
 
-    // 发送 HTTP GET 请求，响应写入 aw.writer
     const res = try client.fetch(.{
         .location = .{ .uri = uri },
         .method = .GET,
@@ -43,13 +23,69 @@ pub fn main() !void {
         .response_writer = &aw.writer,
     });
 
-    // 将 Allocating writer 的内容写回 body，以便之后读取和打印
     body = aw.toArrayList();
 
-    const status_phrase = res.status.phrase() orelse "?";
-    std.debug.print("[debug] status phrase = {s}\n", .{status_phrase});
-    std.debug.print("[debug] body len = {d}\n", .{body.items.len});
-
-    // 打印响应体内容
+    std.debug.print("HTTP status: {}\n", .{res.status});
+    std.debug.print("body length: {}\n", .{body.items.len});
     std.debug.print("{s}\n", .{body.items});
+}
+
+fn run_stream(client: *std.http.Client, allocator: std.mem.Allocator, url: []const u8) !void {
+    const uri = try std.Uri.parse(url);
+
+    const headers = [_]std.http.Header{
+        .{ .name = "accept", .value = "application/json" },
+    };
+
+    var body = try std.ArrayList(u8).initCapacity(allocator, 1024);
+    defer body.deinit(allocator);
+
+    var aw: std.io.Writer.Allocating = .fromArrayList(allocator, &body);
+
+    const res = try client.fetch(.{
+        .location = .{ .uri = uri },
+        .method = .GET,
+        .extra_headers = &headers,
+        .response_writer = &aw.writer,
+    });
+
+    body = aw.toArrayList();
+
+    // 把 body 按行拆分并逐行打印，适用于 stream/2 的逐行 JSON 返回
+    var start: usize = 0;
+    var idx: usize = 0;
+    while (idx < body.items.len) : (idx += 1) {
+        const b = body.items[idx];
+        if (b == '\n') {
+            const line = body.items[start..idx];
+            if (line.len != 0) std.debug.print("stream line: {s}\n", .{line});
+            start = idx + 1;
+        }
+    }
+    if (start < body.items.len) {
+        const last = body.items[start..body.items.len];
+        if (last.len != 0) std.debug.print("stream line: {s}\n", .{last});
+    }
+
+    std.debug.print("stream finished, status: {}\n", .{res.status});
+}
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var client = std.http.Client{ .allocator = allocator };
+    defer client.deinit();
+
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
+    const mode = if (args.len > 1) args[1] else "get";
+
+    if (std.mem.eql(u8, mode, "stream")) {
+        try run_stream(&client, allocator, "https://httpbin.org/stream/2");
+    } else {
+        try run_get(&client, allocator, "https://httpbin.org/get");
+    }
 }
