@@ -32,3 +32,6 @@ tmp/
 *.log
 
 # Note: build outputs will be moved to `build/` by the helper script
+
+main
+main.exe

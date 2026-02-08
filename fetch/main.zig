@@ -19,7 +19,7 @@ pub fn main() !void {
     std.debug.print("[debug] http client created\n", .{});
 
     // 解析目标 URL
-    const uri = try std.Uri.parse("https://httpbin.org/stream/2");
+    const uri = try std.Uri.parse("https://httpbin.org/get");
 
     // 定义请求头，设置 Accept 为 application/json
     const headers = [_]std.http.Header{
@@ -34,7 +34,6 @@ pub fn main() !void {
 
     // 使用 Allocating writer 将响应写入 ArrayList（匹配 API 要求的 Writer 类型）
     var aw: std.io.Writer.Allocating = .fromArrayList(allocator, &body);
-    defer body = aw.toArrayList();
 
     // 发送 HTTP GET 请求，响应写入 aw.writer
     const res = try client.fetch(.{
@@ -44,18 +43,13 @@ pub fn main() !void {
         .response_writer = &aw.writer,
     });
 
+    // 将 Allocating writer 的内容写回 body，以便之后读取和打印
+    body = aw.toArrayList();
+
     const status_phrase = res.status.phrase() orelse "?";
     std.debug.print("[debug] status phrase = {s}\n", .{status_phrase});
     std.debug.print("[debug] body len = {d}\n", .{body.items.len});
-    // 额外尝试：直接将响应写到 stdout 以验证传输是否真的为空
-    var stdout = std.fs.File.stdout();
-    std.debug.print("[debug] streaming to stdout for inspection:\n", .{});
-    _ = try client.fetch(.{
-        .location = .{ .uri = uri },
-        .method = .GET,
-        .extra_headers = &headers,
-        .response_writer = &stdout.writer,
-    });
+
     // 打印响应体内容
     std.debug.print("{s}\n", .{body.items});
 }
