@@ -30,6 +30,25 @@ zig build-exe fetch/main.zig
 zig run fetch/main.zig
 ```
 
+流式模式（stream）
+
+- 有些端点返回逐行 JSON 流（例如 `https://httpbin.org/stream/2`），可以使用 `stream` 模式读取并逐行打印：
+
+```bash
+# 运行 stream 模式，向 https://httpbin.org/stream/2 发送请求
+zig run fetch/main.zig -- stream
+```
+
+输出示例：
+
+```
+stream line: {"url": "https://httpbin.org/stream/2", "args": {}, ...}
+stream line: {"url": "https://httpbin.org/stream/2", "args": {}, ...}
+stream finished, status: .ok
+```
+
+说明：程序会将每个换行分隔的 JSON 行作为一条流记录打印，适合用于处理逐行流数据。
+
 4. 运行测试
 
 ```bash
