@@ -39,6 +39,42 @@ pub fn main() !void {
 
         if (message.len == 0) continue;
 
+        // DEBUG: show received message for diagnostics (temporary)
+        std.debug.print("[debug] received message: {s}\n", .{message});
+
+        // DEBUG: parse the request to inspect params
+        var parsed = try mcp.parseRequest(allocator, message);
+        defer parsed.deinit();
+        std.debug.print("[debug] parsed method: {s}\n", .{parsed.request.method});
+        if (parsed.request.params) |p| {
+            switch (p) {
+                .object => |obj| {
+                    // print keys
+                    if (obj.get("tool")) |tool| {
+                        std.debug.print("[debug] params has 'tool' key\n", .{});
+                        switch (tool) {
+                            .string => |s| std.debug.print("[debug] tool string = {s}\n", .{s}),
+                            else => std.debug.print("[debug] tool is not a string\n", .{}),
+                        }
+                    }
+                    if (obj.get("input")) |input| {
+                        std.debug.print("[debug] params has 'input' key\n", .{});
+                        // If input is object, print keys
+                        if (input == .object) {
+                            var it2 = input.object.iterator();
+                            while (it2.next()) |entry| {
+                                _ = entry;
+                                std.debug.print("[debug] input has a key\n", .{});
+                            }
+                        }
+                    }
+                },
+                else => std.debug.print("[debug] params present but not an object\n", .{}),
+            }
+        } else {
+            std.debug.print("[debug] params = null\n", .{});
+        }
+
         const response = try server.handleRequest(message);
         defer allocator.free(response);
 
