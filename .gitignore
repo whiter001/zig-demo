@@ -1,3 +1,32 @@
+# Zig build artifacts
 .zig-cache/
 zig-out/
+
+# Object and binary files
 *.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Temporary and test files
+test-temp-*/
+tmp/
+*.tmp
+
+# macOS
+.DS_Store
+
+# Editors/IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+
+# Note: keep project source and docs tracked (no broad "*" ignore)
