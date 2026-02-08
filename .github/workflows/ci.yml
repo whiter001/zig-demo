@@ -20,11 +20,23 @@ jobs:
 
       - name: Format check
         run: |
-          zig fmt src || true
-          zig fmt main.zig fetch/main.zig || true
+          zig fmt --check .
+
+      - name: Fetch dependencies
+        run: |
+          # Ensure dependencies in build.zig.zon are available to the build
+          zig fetch
 
       - name: Build
         run: zig build
+
+      - name: Verify build artifact
+        run: |
+          if [ ! -x ./zig-out/bin/zig-demo-mcp ]; then
+            echo "Expected ./zig-out/bin/zig-demo-mcp not found";
+            ls -la ./zig-out || true;
+            exit 1;
+          fi
 
       - name: Run greet test script
         run: |
