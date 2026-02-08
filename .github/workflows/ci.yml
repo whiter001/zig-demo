@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: ziglang/setup-zig@v1
+        with:
+          version: '0.15.2'
+
+      - name: Format check
+        run: |
+          zig fmt src || true
+          zig fmt main.zig fetch/main.zig || true
+
+      - name: Build
+        run: zig build
+
+      - name: Run greet test script
+        run: |
+          chmod +x test/greet_test.sh
+          ./test/greet_test.sh

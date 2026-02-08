@@ -1,6 +1,7 @@
 # Zig build artifacts
 .zig-cache/
 build/
+zig-out/
 
 # Object and binary files
 *.o
@@ -16,6 +17,7 @@ build/
 test-temp-*/
 tmp/
 *.tmp
+
 
 # macOS
 .DS_Store

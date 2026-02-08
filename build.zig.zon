@@ -1,0 +1,12 @@
+.{
+    .name = .zig_demo,
+    .version = "0.15.2",
+    .dependencies = .{
+        .mcp = .{
+            .url = "git+https://github.com/bkataru/mcp.zig.git#7de378e6bf3ad972b163c8d8aa61a7e6480e15fd",
+            .hash = "mcp-0.2.1-l6WL64iTBgAgHnZcMWl3qn0Rd1B5lO2KuxtX3yXNwp0L",
+        },
+    },
+    .paths = .{""},
+    .fingerprint = 0x1e283c43f84df277,
+}
